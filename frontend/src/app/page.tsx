@@ -44,27 +44,22 @@ export default function Home() {
       {/* --- 1. HERO SECTION (Ấn tượng đầu tiên) --- */}
       <div className="relative bg-gradient-to-br from-primary to-blue-600 text-white overflow-hidden">
         {/* Họa tiết nền mờ ảo */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3"></div>
-
-        <div className="container mx-auto px-4 py-20 md:py-28 relative z-10 text-center">
-          <span className="inline-block py-1 px-3 rounded-full bg-white/20 border border-white/30 text-sm font-medium mb-6 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="container mx-auto px-4 py-12 relative z-10 text-center">
+          <span className="inline-block py-1 px-3 rounded-full bg-white/20 border border-white/30 text-sm font-medium mb-4 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
             ✨ Giải pháp tiết kiệm tới 80% chi phí
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
             Nâng cấp <span className="text-yellow-300">Youtube Premium</span>{" "}
             <br />
             Chính chủ - Giá rẻ - Uy tín
           </h1>
-          <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto mb-10">
+          <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto mb-8">
             Tận hưởng video không quảng cáo, nghe nhạc tắt màn hình và Youtube
             Music Premium. Bảo hành trọn đời, hỗ trợ 24/7.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="#pricing">
-              {" "}
-              {/* Link neo xuống phần giá */}
               <button className="px-8 py-4 bg-white text-primary rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
                 Xem bảng giá
                 <ArrowRight size={20} />
