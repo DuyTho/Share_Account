@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: #F8F9FA; /* Màu background theo thiết kế */
+  min-height: 100vh;
+}
+
+/* Custom Utilities nếu cần */
+.container-custom {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-blue-600 transition-colors duration-200 font-medium py-2 px-4 rounded-lg;
+}
