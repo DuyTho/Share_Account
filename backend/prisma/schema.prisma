@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model MasterAccounts {
+  master_id     Int                    @id @default(autoincrement())
+  email         String                 @db.VarChar(100)
+  invite_link   String                 @db.Text
+  address_zip   String?                @db.VarChar(50)
+  max_slots     Int?                   @default(5)
+  used_slots    Int?                   @default(0)
+  status        MasterAccounts_status? @default(active)
+  Subscriptions Subscriptions[]
+}
+
+model Orders {
+  order_id       Int                    @id @default(autoincrement())
+  user_id        Int
+  product_id     Int
+  date           DateTime?              @default(now()) @db.Timestamp(0)
+  total          Decimal                @db.Decimal(10, 2)
+  payment_method String?                @db.VarChar(50)
+  payment_status Orders_payment_status? @default(pending)
+  Users          Users                  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "orders_ibfk_1")
+  Products       Products               @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "orders_ibfk_2")
+  Subscriptions  Subscriptions[]
+
+  @@index([product_id], map: "product_id")
+  @@index([user_id], map: "user_id")
+}
+
+model Products {
+  product_id      Int             @id @default(autoincrement())
+  name            String          @db.VarChar(100)
+  duration_months Int
+  price           Decimal         @db.Decimal(10, 2)
+  description     String?         @db.Text
+  is_active       Boolean?        @default(true)
+  Orders          Orders[]
+  Subscriptions   Subscriptions[]
+}
+
+model Subscriptions {
+  sub_id         Int                   @id @default(autoincrement())
+  user_id        Int
+  product_id     Int
+  order_id       Int
+  master_id      Int?
+  start_date     DateTime              @db.DateTime(0)
+  end_date       DateTime              @db.DateTime(0)
+  status         Subscriptions_status? @default(active)
+  Users          Users                 @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_ibfk_1")
+  Products       Products              @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_ibfk_2")
+  Orders         Orders                @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_ibfk_3")
+  MasterAccounts MasterAccounts?       @relation(fields: [master_id], references: [master_id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_ibfk_4")
+
+  @@index([master_id], map: "master_id")
+  @@index([order_id], map: "order_id")
+  @@index([product_id], map: "product_id")
+  @@index([user_id], map: "user_id")
+}
+
+model Support {
+  ticket_id  Int             @id @default(autoincrement())
+  user_id    Int
+  subject    String          @db.VarChar(200)
+  message    String          @db.Text
+  created_at DateTime?       @default(now()) @db.Timestamp(0)
+  status     Support_status? @default(new)
+  Users      Users           @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "support_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model Users {
+  user_id       Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  email         String          @unique(map: "email") @db.VarChar(100)
+  password      String          @db.VarChar(255)
+  phone         String?         @db.VarChar(20)
+  role          Users_role?     @default(customer)
+  status        Users_status?   @default(active)
+  created_at    DateTime?       @default(now()) @db.Timestamp(0)
+  Orders        Orders[]
+  Subscriptions Subscriptions[]
+  Support       Support[]
+}
+
+enum Users_role {
+  admin
+  customer
+}
+
+enum Support_status {
+  new
+  processing
+  done
+}
+
+enum MasterAccounts_status {
+  active
+  full
+  dead
+}
+
+enum Orders_payment_status {
+  pending
+  paid
+  cancelled
+}
+
+enum Users_status {
+  active
+  banned
+}
+
+enum Subscriptions_status {
+  active
+  expired
+  migrating
+}

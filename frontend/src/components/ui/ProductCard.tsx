@@ -14,7 +14,7 @@ export default function ProductCard({
   onAddToCart,
 }: ProductCardProps) {
   return (
-    <div className="bg-white rounded-[20px] p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-[20px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between items-center text-center hover:shadow-lg transition-shadow duration-300">
       {/* Tiêu đề gói */}
       <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
 

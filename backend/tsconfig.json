@@ -1,21 +1,22 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    /* 1. Cấu hình module:  */
+    "target": "es2016",
+    "module": "commonjs", 
+    "moduleResolution": "node",
+    
+    /* 2. Đường dẫn */
+    "rootDir": "./src",      /* Code nguồn nằm ở đây */
+    "outDir": "./dist",      /* Code build ra sẽ nằm ở đây */
+
+    
+    "esModuleInterop": true, /* Giúp import các thư viện cũ dễ dàng hơn */
+    "skipLibCheck": true,    /* Bỏ qua check lỗi trong file định nghĩa của thư viện */
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
