@@ -8,7 +8,7 @@ import orderRoutes from './routes/order.route'
 import supportRoutes from './routes/support.route'
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT
 
 // Middleware
 app.use(cors())
@@ -19,7 +19,7 @@ app.use(express.json())
 app.use('/users', userRoutes)
 app.use('/products', productRoutes)
 app.use('/orders', orderRoutes)
-app.use('/support', supportRoutes)
+app.use('/supports', supportRoutes)
 
 // Trang chủ test
 app.get('/', (req, res) => {
