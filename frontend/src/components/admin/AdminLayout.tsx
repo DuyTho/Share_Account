@@ -1,6 +1,8 @@
 "use client";
+
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Thêm useRouter
+import { useEffect, useState } from "react"; // Thêm Hooks
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -16,7 +18,7 @@ interface AdminLayoutProps {
 
 // Menu Navigation
 const navItems = [
-  { name: "Tổng quan", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "Tổng quan", href: "/admin/dashboard", icon: LayoutDashboard }, // Sửa href cho khớp với page admin
   { name: "Quản lý gói dịch vụ", href: "/admin/products", icon: ShoppingBag },
   { name: "Quản lý đơn hàng", href: "/admin/orders", icon: ListChecks },
   { name: "Quản lý người dùng", href: "/admin/users", icon: Users },
@@ -24,13 +26,32 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  // Lấy đường dẫn hiện tại (Chỉ dùng được trong Client Component)
   const pathname = usePathname();
+  const router = useRouter(); // Dùng để chuyển trang
+
+  // State lưu thông tin Admin
+  const [user, setUser] = useState<any>(null);
+
+  // 1. Lấy thông tin Admin khi vào trang
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // 2. Hàm xử lý Đăng xuất
+  const handleLogout = () => {
+    // Xóa thông tin đăng nhập
+    localStorage.removeItem("user");
+    // Chuyển hướng về trang login
+    router.push("/login");
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* --- SIDEBAR (Màu Xanh Đậm) --- */}
-      <aside className="w-64 bg-primary-dark text-white flex flex-col shrink-0">
+      <aside className="w-64 bg-primary-dark text-white flex flex-col shrink-0 transition-all duration-300">
         <div className="p-6 text-xl font-extrabold text-center border-b border-white/20">
           Admin Panel
         </div>
@@ -40,19 +61,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Quản trị hệ thống
           </h3>
           {navItems.map((item) => {
-            // Kiểm tra xem đây có phải là trang hiện tại không
             const isActive = pathname === item.href;
-
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                // Dùng Tailwind để thay đổi màu nền và text khi isActive là true
                 className={`flex items-center gap-3 p-2 rounded-lg transition-colors font-medium 
                   ${
                     isActive
                       ? "bg-primary text-white shadow-lg shadow-blue-500/20"
-                      : "text-white/80 hover:bg-primary/50" // Giảm độ sáng của hover khi không active
+                      : "text-white/80 hover:bg-primary/50"
                   }
                 `}
               >
@@ -63,25 +81,50 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           })}
         </nav>
 
-        {/* Thông tin Admin & Logout */}
+        {/* --- CẬP NHẬT GÓC TRÁI BÊN DƯỚI --- */}
         <div className="p-4 border-t border-white/20">
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-white/10">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-primary font-bold">
-              Q
+          {user ? (
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+              {/* Avatar: Lấy chữ cái đầu của tên */}
+              <div className="w-8 h-8 bg-white text-primary-dark rounded-full flex items-center justify-center font-bold shrink-0">
+                {user.name?.charAt(0).toUpperCase() || "A"}
+              </div>
+
+              {/* Thông tin: Tên và Email (cắt ngắn nếu dài) */}
+              <div className="overflow-hidden">
+                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p
+                  className="text-xs text-blue-200 truncate"
+                  title={user.email}
+                >
+                  {user.email}
+                </p>
+              </div>
+
+              {/* Nút Đăng xuất: Đã gắn sự kiện onClick */}
+              <button
+                onClick={handleLogout}
+                className="ml-auto text-white/60 hover:text-red-400 transition-colors p-1"
+                title="Đăng xuất"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
-            <div>
-              <p className="text-sm font-bold">Quản trị viên</p>
-              <p className="text-xs text-blue-200">Nguyễn Văn A</p>
+          ) : (
+            // Skeleton loader nhẹ khi chưa load xong user
+            <div className="flex items-center gap-3 p-2 animate-pulse">
+              <div className="w-8 h-8 bg-white/20 rounded-full"></div>
+              <div className="flex-1 space-y-1">
+                <div className="h-3 bg-white/20 rounded w-2/3"></div>
+                <div className="h-2 bg-white/20 rounded w-1/2"></div>
+              </div>
             </div>
-            <button className="ml-auto text-white/60 hover:text-white transition-colors">
-              <LogOut size={18} />
-            </button>
-          </div>
+          )}
         </div>
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto p-8">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto p-8 bg-[#F3F4F6]">
         {children}
       </div>
     </div>

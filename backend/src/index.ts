@@ -5,6 +5,7 @@ import cors from 'cors'
 import userRoutes from './routes/user.route'
 import productRoutes from './routes/product.route'
 import orderRoutes from './routes/order.route'
+import supportRoutes from './routes/support.route'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -18,6 +19,7 @@ app.use(express.json())
 app.use('/users', userRoutes)
 app.use('/products', productRoutes)
 app.use('/orders', orderRoutes)
+app.use('/support', supportRoutes)
 
 // Trang chủ test
 app.get('/', (req, res) => {
