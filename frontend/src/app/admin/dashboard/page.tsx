@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   TrendingUp,
@@ -9,9 +10,31 @@ import {
   UserPlus,
   Package,
   DollarSign,
+  Loader2,
 } from "lucide-react";
 
-// Component Card Thống kê
+const API_BASE_URL = "http://localhost:8080";
+
+// --- Types cập nhật theo đúng cấu trúc JSON từ DashboardController ---
+interface DashboardData {
+  cards: {
+    revenue: number;
+    orders: number;
+    users: number;
+    active_subs: number;
+  };
+  recent_orders: {
+    id: number;
+    customer: string;
+    package: string;
+    amount: number;
+    status: string;
+    date: string;
+  }[];
+  // chart_data có thể thêm vào sau nếu cần vẽ biểu đồ thật
+}
+
+// Component Card Thống kê (Giữ nguyên UI)
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
   <div
     className={`bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between ${color}`}
@@ -29,7 +52,7 @@ const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
       {trend && (
         <div className="flex items-center text-sm font-medium">
           <TrendingUp size={16} className="mr-1" />
-          <span>{trend} tháng này</span>
+          <span>{trend}</span>
         </div>
       )}
     </div>
@@ -39,96 +62,167 @@ const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardData | null>(null);
 
-  // --- BẢO VỆ TRANG ADMIN ---
+  // --- CHECK QUYỀN & FETCH DATA ---
   useEffect(() => {
-    // 1. Lấy thông tin user từ localStorage
-    const userStr = localStorage.getItem("user");
-
-    if (!userStr) {
-      // Chưa đăng nhập -> Đá về trang login
-      router.push("/login");
-      return;
-    }
-
-    const user = JSON.parse(userStr);
-
-    // 2. Kiểm tra quyền
-    if (user.role !== "admin") {
-      // Đã đăng nhập nhưng không phải admin -> Đá về trang chủ
-      alert("Bạn không có quyền truy cập trang này!");
-      router.push("/");
-    } else {
-      // Đúng là admin -> Cho phép hiển thị
+    const initDashboard = async () => {
+      // 1. Check Auth
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        router.push("/login");
+        return;
+      }
+      const user = JSON.parse(userStr);
+      if (user.role !== "admin") {
+        alert("Bạn không có quyền truy cập trang này!");
+        router.push("/");
+        return;
+      }
       setAuthorized(true);
-    }
+
+      // 2. Fetch Data từ API Backend
+      try {
+        // Cập nhật đường dẫn đúng: /dashboard/stats
+        const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        } else {
+          console.error("Lỗi tải thống kê dashboard");
+        }
+      } catch (error) {
+        console.error("Lỗi kết nối:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initDashboard();
   }, [router]);
 
-  // Nếu chưa check xong quyền thì không hiện gì cả (hoặc hiện loading)
-  if (!authorized) {
-    return null;
+  // Helpers Format
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("vi-VN");
+  };
+
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case "paid":
+        return (
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-200">
+            Hoàn thành
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200">
+            Đang xử lý
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
+            Đã hủy
+          </span>
+        );
+      default:
+        return (
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  if (!authorized) return null;
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-[500px]">
+          <Loader2 className="animate-spin text-primary" size={40} />
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
     <AdminLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-1">Tổng quan</h1>
-      <p className="text-gray-500 mb-8">Xem toàn bộ hoạt động và doanh thu</p>
+      <p className="text-gray-500 mb-8">
+        Số liệu thống kê thời gian thực từ hệ thống
+      </p>
 
-      {/* --- HÀNG 1: THẺ THỐNG KÊ --- */}
+      {/* --- HÀNG 1: THẺ THỐNG KÊ (DỮ LIỆU THẬT) --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard
           title="Tổng doanh thu"
-          value="45.000.000đ"
+          // Truy cập vào stats.cards.revenue thay vì stats.revenue
+          value={stats ? formatCurrency(stats.cards.revenue) : "0đ"}
           icon={DollarSign}
           color="text-primary"
-          trend="+12%"
+          trend="Tất cả thời gian"
         />
         <StatCard
           title="Tổng đơn hàng"
-          value="320 đơn"
+          value={stats ? `${stats.cards.orders} đơn` : "0 đơn"}
           icon={ShoppingBag}
           color="text-yellow-600"
-          trend="-3%"
+          trend="Tất cả thời gian"
         />
         <StatCard
-          title="Người dùng đăng ký"
-          value="1000 người"
+          title="Người dùng"
+          value={stats ? `${stats.cards.users} người` : "0 người"}
           icon={UserPlus}
           color="text-purple-600"
-          trend="+5%"
+          trend="Khách hàng"
         />
         <StatCard
-          title="Gói đang hoạt động"
-          value="28 gói"
+          title="Gói đang chạy"
+          value={stats ? `${stats.cards.active_subs} gói` : "0 gói"}
           icon={Package}
           color="text-success"
-          trend="Đang bán"
+          trend="Active Subs"
         />
       </div>
 
-      {/* --- HÀNG 2: BIỂU ĐỒ --- */}
+      {/* --- HÀNG 2: BIỂU ĐỒ (Placeholder) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 lg:col-span-2 min-h-[300px]">
-          <h3 className="text-lg font-bold mb-4">Doanh thu theo tháng</h3>
-          <div className="h-[85%] w-full bg-gray-50 flex items-center justify-center text-gray-400 border border-dashed border-gray-300 rounded-xl">
-            [Biểu đồ sẽ hiển thị tại đây]
+          <h3 className="text-lg font-bold mb-4">Biểu đồ doanh thu</h3>
+          <div className="h-[85%] w-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-300 rounded-xl gap-2">
+            <DollarSign size={40} className="text-gray-300" />
+            <p>Tính năng đang phát triển</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 min-h-[300px]">
-          <h3 className="text-lg font-bold mb-4">Tỷ lệ gói được mua</h3>
-          <div className="h-[85%] w-full bg-gray-50 flex items-center justify-center text-gray-400 border border-dashed border-gray-300 rounded-xl">
-            [Biểu đồ tròn]
+          <h3 className="text-lg font-bold mb-4">Tỷ lệ gói dịch vụ</h3>
+          <div className="h-[85%] w-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-300 rounded-xl gap-2">
+            <Package size={40} className="text-gray-300" />
+            <p>Tính năng đang phát triển</p>
           </div>
         </div>
       </div>
 
-      {/* --- HÀNG 3: BẢNG ĐƠN HÀNG --- */}
+      {/* --- HÀNG 3: BẢNG ĐƠN HÀNG MỚI NHẤT --- */}
       <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 overflow-hidden">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-gray-900">Đơn hàng gần đây</h3>
-          <button className="text-sm text-primary hover:underline">
+          <h3 className="text-lg font-bold text-gray-900">Đơn hàng mới nhất</h3>
+          <Link
+            href="/admin/orders"
+            className="text-sm text-primary hover:underline font-bold"
+          >
             Xem tất cả
-          </button>
+          </Link>
         </div>
 
         <div className="overflow-x-auto">
@@ -156,51 +250,39 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {/* Dữ liệu giả mẫu */}
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
-                  #OD-001
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  Nguyễn Thị Hồng Nhung
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  Canva Pro
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                  200.000đ
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-200">
-                    Hoàn thành
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  16/12/2025
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
-                  #OD-002
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  Trần Kim Toàn
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  ChatGPT Pro
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                  300.000đ
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                    Đang xử lý
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  16/12/2025
-                </td>
-              </tr>
+              {stats?.recent_orders && stats.recent_orders.length > 0 ? (
+                stats.recent_orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                      #{order.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {order.customer}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {order.package}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                      {formatCurrency(order.amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {renderStatusBadge(order.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(order.date)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-10 text-center text-gray-500"
+                  >
+                    Chưa có đơn hàng nào.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

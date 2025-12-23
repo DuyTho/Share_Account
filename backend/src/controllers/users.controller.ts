@@ -88,3 +88,49 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 }
 
+export const getUserProfile = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.users.findUnique({
+      where: { user_id: Number(id) },
+      // Không trả về password
+      select: { user_id: true, name: true, email: true, phone: true, role: true, created_at: true }
+    });
+    
+    if (!user) return res.status(404).json({ error: "Không tìm thấy user" });
+    
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi server" });
+  }
+};
+
+export const updateUserProfile = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, phone } = req.body; // Chỉ cho phép sửa Tên và SĐT
+
+  try {
+    const updatedUser = await prisma.users.update({
+      where: { user_id: Number(id) },
+      data: {
+        name: name,
+        phone: phone
+      }
+    });
+
+    // Trả về user mới (để frontend cập nhật localStorage)
+    res.json({ 
+      message: "Cập nhật thành công", 
+      user: {
+        user_id: updatedUser.user_id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Lỗi cập nhật thông tin" });
+  }
+};

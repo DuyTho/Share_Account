@@ -6,6 +6,10 @@ import userRoutes from './routes/user.route'
 import productRoutes from './routes/product.route'
 import orderRoutes from './routes/order.route'
 import supportRoutes from './routes/support.route'
+import cartRoutes from './routes/cart.route'
+import subscriptionRoutes from './routes/subscription.route'
+import dashboardRoutes from './routes/dashboard.route'
+
 
 const app = express()
 const PORT = process.env.PORT
@@ -20,6 +24,9 @@ app.use('/users', userRoutes)
 app.use('/products', productRoutes)
 app.use('/orders', orderRoutes)
 app.use('/supports', supportRoutes)
+app.use('/dashboard', dashboardRoutes)
+app.use('/subscriptions', subscriptionRoutes)
+app.use('/cart', cartRoutes)
 
 // Trang chủ test
 app.get('/', (req, res) => {

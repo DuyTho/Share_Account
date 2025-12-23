@@ -1,4 +1,4 @@
-"use client"; // 1. Bắt buộc thêm dòng này để dùng localStorage và State
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -15,53 +15,88 @@ import {
 } from "lucide-react";
 
 export default function Navbar() {
-  // 2. State để lưu thông tin user
   const [user, setUser] = useState<any>(null);
-  const [mounted, setMounted] = useState(false); // Tránh lỗi hydration của Next.js
+  const [cartCount, setCartCount] = useState(0); // State lưu số lượng giỏ hàng
+  const [mounted, setMounted] = useState(false);
 
-  // 3. Kiểm tra localStorage khi web vừa load
+  // Hàm gọi API để đếm số lượng trong giỏ
+  const fetchCartCount = async (userId: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/cart/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Tính tổng số lượng (VD: Mua 2 gói Youtube + 1 gói Netflix = 3)
+        const total = data.reduce(
+          (sum: number, item: any) => sum + item.quantity,
+          0
+        );
+        setCartCount(total);
+      }
+    } catch (error) {
+      console.error("Lỗi tải giỏ hàng:", error);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
+
+    // 1. Lấy User từ LocalStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      // Gọi API đếm giỏ hàng ngay khi có user
+      fetchCartCount(parsedUser.user_id);
     }
 
-    // Lắng nghe sự kiện thay đổi localStorage (để khi login xong navbar tự cập nhật)
+    // 2. Lắng nghe sự kiện login/logout
     const handleStorageChange = () => {
       const updatedUser = localStorage.getItem("user");
-      setUser(updatedUser ? JSON.parse(updatedUser) : null);
+      if (updatedUser) {
+        const parsed = JSON.parse(updatedUser);
+        setUser(parsed);
+        fetchCartCount(parsed.user_id);
+      } else {
+        setUser(null);
+        setCartCount(0);
+      }
+    };
+
+    // 3. LẮNG NGHE SỰ KIỆN "cartUpdated" (Tự chế để các trang khác báo về)
+    const handleCartUpdate = () => {
+      const currentUser = localStorage.getItem("user");
+      if (currentUser) {
+        fetchCartCount(JSON.parse(currentUser).user_id);
+      }
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("cartUpdated", handleCartUpdate); // <--- Sự kiện mới
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
   }, []);
 
-  // 4. Hàm Đăng xuất
   const handleLogout = () => {
     localStorage.removeItem("user");
     setUser(null);
-    window.location.href = "/login"; // Reload lại trang để xóa sạch state cũ
+    setCartCount(0);
+    window.location.href = "/login";
   };
 
-  // Nếu chưa mount xong thì chưa render logic user để tránh lỗi giao diện
   if (!mounted) return null;
 
   return (
     <div className="w-full sticky top-0 z-50">
-      {/* --- Tầng 1: Top Bar (Giữ nguyên) --- */}
+      {/* --- Top Bar (Giữ nguyên) --- */}
       <div className="bg-primary-dark text-white text-sm py-2">
         <div className="container mx-auto px-4 flex justify-end gap-6 items-center">
           <div className="flex items-center gap-2">
             <Mail size={16} />
             <span>shareaccount@gmail.com</span>
           </div>
-          <Link
-            href="/support"
-            className="flex items-center gap-2 hover:text-yellow-300 transition-colors"
-          >
-            <Phone size={16} /> <span>Hỗ trợ khách hàng</span>
-          </Link>
           <Link
             href="/tutorial"
             className="flex items-center gap-2 hover:text-yellow-300 transition-colors"
@@ -71,20 +106,17 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* --- Tầng 2: Main Header --- */}
+      {/* --- Main Header --- */}
       <header className="bg-primary shadow-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col gap-4">
-            {/* Hàng trên: Logo - Search - Actions */}
             <div className="flex items-center justify-between gap-4">
-              {/* Logo */}
               <Link href="/" className="bg-white px-4 py-2 rounded shadow-sm">
                 <span className="text-primary text-2xl font-extrabold tracking-wider">
                   LOGO
                 </span>
               </Link>
 
-              {/* Search Bar */}
               <div className="hidden md:flex flex-1 max-w-2xl relative mx-4">
                 <input
                   type="text"
@@ -97,25 +129,20 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* KHU VỰC QUAN TRỌNG: User Actions */}
               <div className="flex items-center gap-4">
-                {/* LOGIC: Nếu có User -> Hiện Menu, Chưa có -> Hiện nút Đăng nhập */}
                 {user ? (
-                  // --- GIAO DIỆN ĐÃ ĐĂNG NHẬP ---
                   <div className="relative group">
                     <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors border border-white/30">
                       <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-primary font-bold">
-                        {user.name.charAt(0).toUpperCase()}{" "}
-                        {/* Lấy chữ cái đầu của tên */}
+                        {user.name.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-medium max-w-[150px] truncate hidden md:block">
                         {user.name}
                       </span>
                       <ChevronDown size={20} />
                     </button>
-
-                    {/* Dropdown Menu (Hiện khi hover vào group) */}
                     <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block animate-in fade-in slide-in-from-top-2">
+                      {/* Dropdown content giữ nguyên */}
                       <div className="p-3 border-b border-gray-100">
                         <p className="text-sm font-bold text-gray-900">
                           {user.name}
@@ -149,7 +176,6 @@ export default function Navbar() {
                     </div>
                   </div>
                 ) : (
-                  // --- GIAO DIỆN CHƯA ĐĂNG NHẬP (Cũ) ---
                   <>
                     <Link
                       href="/login"
@@ -166,21 +192,20 @@ export default function Navbar() {
                   </>
                 )}
 
-                {/* Cart Icon (Luôn hiện) */}
                 <Link
                   href="/cart"
                   className="relative p-2 text-white hover:opacity-80"
                 >
                   <ShoppingCart size={28} />
-                  {/* Badge số lượng (Demo) */}
-                  <span className="absolute -top-1 -right-1 bg-yellow-400 text-primary-dark text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-primary">
-                    0
-                  </span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-yellow-400 text-primary-dark text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-primary animate-in zoom-in duration-300">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
                 </Link>
               </div>
             </div>
 
-            {/* Hàng dưới: Menu Navigation (Giữ nguyên) */}
             <nav className="flex items-center gap-8 pt-2 pb-1 text-white font-bold text-lg overflow-x-auto">
               <Link
                 href="/"
@@ -189,22 +214,16 @@ export default function Navbar() {
                 Trang chủ
               </Link>
               <Link
-                href="/products"
+                href="/dashboard"
                 className="hover:text-yellow-300 transition-colors whitespace-nowrap"
               >
-                Gói dịch vụ
+                Quản lý dịch vụ
               </Link>
               <Link
-                href="/explore"
+                href="/support"
                 className="hover:text-yellow-300 transition-colors whitespace-nowrap"
               >
-                Khám phá
-              </Link>
-              <Link
-                href="/news"
-                className="hover:text-yellow-300 transition-colors whitespace-nowrap"
-              >
-                Tin tức
+                Hỗ trợ
               </Link>
             </nav>
           </div>
