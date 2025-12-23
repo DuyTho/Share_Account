@@ -125,11 +125,6 @@ export const inviteToFamily = async (customerEmail: string) => {
 
     console.log('✅ Email đã được Google nhận');
 
-    /* 📸 SCREENSHOT SAU KHI NHẬP EMAIL */
-    await page.screenshot({
-      path: `after-input-${Date.now()}.png`,
-      fullPage: true,
-    });
 
     /* ================= STEP 4 ================= */
     console.log('🚀 Click nút Gửi...');
