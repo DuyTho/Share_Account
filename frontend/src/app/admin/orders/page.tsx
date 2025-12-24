@@ -266,6 +266,25 @@ export default function AdminOrderPage() {
 
       {/* FILTERS */}
       <div className="bg-white p-4 rounded-t-2xl border-b border-gray-100 flex flex-col md:flex-row gap-4 items-end justify-between">
+        <div className="flex gap-2 w-full md:w-auto items-end">
+          <div className="flex-1 md:w-64">
+            <label className="text-xs font-bold text-gray-500 mb-1 block">
+              Tìm kiếm
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                <Search size={16} />
+              </div>
+              <input
+                type="text"
+                placeholder="Tên khách, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-gray-50 border border-gray-200 text-sm rounded-lg focus:ring-primary block w-full pl-10 p-2.5 outline-none"
+              />
+            </div>
+          </div>
+        </div>
         <div className="flex gap-4 w-full md:w-auto">
           <div className="w-48">
             <label className="text-xs font-bold text-gray-500 mb-1 block">
@@ -285,28 +304,6 @@ export default function AdminOrderPage() {
               <option value="Cancel">Đã hủy</option>
             </select>
           </div>
-        </div>
-        <div className="flex gap-2 w-full md:w-auto items-end">
-          <div className="flex-1 md:w-64">
-            <label className="text-xs font-bold text-gray-500 mb-1 block">
-              Tìm kiếm
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                <Search size={16} />
-              </div>
-              <input
-                type="text"
-                placeholder="Tên khách, email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-sm rounded-lg focus:ring-primary block w-full pl-10 p-2.5 outline-none"
-              />
-            </div>
-          </div>
-          <button className="bg-green-100 text-green-700 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-green-200 flex items-center gap-2 h-[42px]">
-            <Download size={16} /> Excel
-          </button>
         </div>
       </div>
 

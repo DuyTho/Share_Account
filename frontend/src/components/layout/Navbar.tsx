@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react"; // 1. Import thêm useRef
 import {
   ShoppingCart,
   Search,
-  Phone,
   Mail,
   FileText,
   User,
@@ -14,18 +13,24 @@ import {
   Package,
 } from "lucide-react";
 
+import Image from "next/image";
+
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
-  const [cartCount, setCartCount] = useState(0); // State lưu số lượng giỏ hàng
+  const [cartCount, setCartCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  // Hàm gọi API để đếm số lượng trong giỏ
+  // 2. State quản lý đóng mở menu
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // 3. Ref để xác định vùng menu (để xử lý click outside)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const fetchCartCount = async (userId: number) => {
     try {
       const res = await fetch(`http://localhost:8080/cart/${userId}`);
       if (res.ok) {
         const data = await res.json();
-        // Tính tổng số lượng (VD: Mua 2 gói Youtube + 1 gói Netflix = 3)
         const total = data.reduce(
           (sum: number, item: any) => sum + item.quantity,
           0
@@ -39,17 +44,13 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-
-    // 1. Lấy User từ LocalStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      // Gọi API đếm giỏ hàng ngay khi có user
       fetchCartCount(parsedUser.user_id);
     }
 
-    // 2. Lắng nghe sự kiện login/logout
     const handleStorageChange = () => {
       const updatedUser = localStorage.getItem("user");
       if (updatedUser) {
@@ -62,7 +63,6 @@ export default function Navbar() {
       }
     };
 
-    // 3. LẮNG NGHE SỰ KIỆN "cartUpdated" (Tự chế để các trang khác báo về)
     const handleCartUpdate = () => {
       const currentUser = localStorage.getItem("user");
       if (currentUser) {
@@ -70,12 +70,24 @@ export default function Navbar() {
       }
     };
 
+    // 4. Logic: Click ra ngoài thì đóng menu
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("cartUpdated", handleCartUpdate); // <--- Sự kiện mới
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    document.addEventListener("mousedown", handleClickOutside); // Lắng nghe click toàn trang
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("cartUpdated", handleCartUpdate);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -86,11 +98,15 @@ export default function Navbar() {
     window.location.href = "/login";
   };
 
+  // Hàm toggle menu khi click
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
   if (!mounted) return null;
 
   return (
     <div className="w-full sticky top-0 z-50">
-      {/* --- Top Bar (Giữ nguyên) --- */}
       <div className="bg-primary-dark text-white text-sm py-2">
         <div className="container mx-auto px-4 flex justify-end gap-6 items-center">
           <div className="flex items-center gap-2">
@@ -106,15 +122,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* --- Main Header --- */}
       <header className="bg-primary shadow-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <Link href="/" className="bg-white px-4 py-2 rounded shadow-sm">
-                <span className="text-primary text-2xl font-extrabold tracking-wider">
-                  LOGO
-                </span>
+              <Link href="/" className="px-4 py-2">
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={120}
+                  height={40}
+                  className="object-contain"
+                />
               </Link>
 
               <div className="hidden md:flex flex-1 max-w-2xl relative mx-4">
@@ -131,49 +150,66 @@ export default function Navbar() {
 
               <div className="flex items-center gap-4">
                 {user ? (
-                  <div className="relative group">
-                    <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors border border-white/30">
+                  // 5. Gán Ref vào div cha và bỏ class 'group' cũ
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={toggleDropdown} // 6. Thêm sự kiện Click
+                      className={`flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors border ${
+                        isDropdownOpen ? "border-white" : "border-white/30"
+                      }`}
+                    >
                       <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-primary font-bold">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-medium max-w-[150px] truncate hidden md:block">
                         {user.name}
                       </span>
-                      <ChevronDown size={20} />
+                      {/* Xoay icon khi mở */}
+                      <ChevronDown
+                        size={20}
+                        className={`transition-transform duration-200 ${
+                          isDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block animate-in fade-in slide-in-from-top-2">
-                      {/* Dropdown content giữ nguyên */}
-                      <div className="p-3 border-b border-gray-100">
-                        <p className="text-sm font-bold text-gray-900">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {user.email}
-                        </p>
+
+                    {/* 7. Hiển thị có điều kiện dựa trên State, bỏ 'group-hover' */}
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 z-50">
+                        <div className="p-3 border-b border-gray-100">
+                          <p className="text-sm font-bold text-gray-900">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                        <div className="py-1">
+                          <Link
+                            href="/profile"
+                            onClick={() => setIsDropdownOpen(false)} // Đóng khi click link
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
+                          >
+                            <User size={18} /> Thông tin tài khoản
+                          </Link>
+                          <Link
+                            href="/orders"
+                            onClick={() => setIsDropdownOpen(false)} // Đóng khi click link
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
+                          >
+                            <Package size={18} /> Đơn hàng của tôi
+                          </Link>
+                        </div>
+                        <div className="border-t border-gray-100 py-1">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left"
+                          >
+                            <LogOut size={18} /> Đăng xuất
+                          </button>
+                        </div>
                       </div>
-                      <div className="py-1">
-                        <Link
-                          href="/profile"
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
-                        >
-                          <User size={18} /> Thông tin tài khoản
-                        </Link>
-                        <Link
-                          href="/orders"
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
-                        >
-                          <Package size={18} /> Đơn hàng của tôi
-                        </Link>
-                      </div>
-                      <div className="border-t border-gray-100 py-1">
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left"
-                        >
-                          <LogOut size={18} /> Đăng xuất
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <>

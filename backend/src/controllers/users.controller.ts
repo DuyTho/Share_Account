@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import prisma from '../prisma'
+import { v4 as uuidv4 } from 'uuid';
 
 // Lấy danh sách user
 export const getUsers = async (req: Request, res: Response) => {
@@ -132,5 +133,55 @@ export const updateUserProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Lỗi cập nhật thông tin" });
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response) => {
+  const { email, name, avatar, google_id } = req.body;
+
+  try {
+    // 1. Kiểm tra xem email này đã tồn tại trong Database chưa
+    let user = await prisma.users.findUnique({
+      where: { email: email }
+    });
+
+    if (user) {
+      // TRƯỜNG HỢP 1: ĐÃ CÓ TÀI KHOẢN
+      // (Có thể update thêm avatar hoặc google_id nếu cần)
+      const { password, ...userInfo } = user;
+      return res.json({ 
+        message: "Đăng nhập Google thành công", 
+        user: userInfo 
+      });
+    } 
+    
+    // TRƯỜNG HỢP 2: CHƯA CÓ -> TẠO MỚI (Tự động đăng ký)
+    // Vì bảng Users yêu cầu password, ta tạo một password ngẫu nhiên siêu khó để không ai đoán được
+    // User này sẽ không bao giờ đăng nhập bằng mật khẩu, chỉ dùng Google
+    const randomPassword = uuidv4(); 
+
+    const newUser = await prisma.users.create({
+      data: {
+        email: email,
+        name: name || "Google User",
+        password: randomPassword, // Password giả để thỏa mãn DB
+        phone: "", // Google không trả về sđt, để trống user tự cập nhật sau
+        role: "customer",
+        status: "active",
+        // Nếu DB bạn có trường avatar thì thêm: avatar: avatar
+      }
+    });
+
+    // Trả về user mới (bỏ password đi)
+    const { password: _, ...newUserInfo } = newUser;
+
+    res.json({
+      message: "Đăng ký nhanh qua Google thành công",
+      user: newUserInfo
+    });
+
+  } catch (error) {
+    console.error("Lỗi Google Login:", error);
+    res.status(500).json({ error: "Lỗi xử lý đăng nhập Google phía server" });
   }
 };

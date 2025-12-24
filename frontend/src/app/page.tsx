@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // 1. Import useRouter để chuyển trang
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import {
   ShieldCheck,
@@ -16,6 +16,7 @@ import {
   Tag,
   AlertCircle, // Icon cho thông báo lỗi
 } from "lucide-react";
+import Chatbot from "@/components/common/chatbot";
 
 // Cấu hình URL API
 const API_BASE_URL = "http://localhost:8080";
@@ -138,7 +139,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#F8F9FA] relative">
       <Navbar />
-
+      <Chatbot products={products} />
       {/* --- HERO SECTION (Giữ nguyên) --- */}
       <div className="relative bg-gradient-to-br from-[#0D6EFD] to-blue-600 text-white overflow-hidden">
         <div className="container mx-auto px-4 py-12 relative z-10 text-center">
