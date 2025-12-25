@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+// 1. Import Toast Component
+import Toast from "@/components/ui/Toast";
 import {
   Clock,
   Copy,
@@ -13,22 +15,37 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-// Cấu hình URL Backend (Đã set chuẩn 8080)
 const API_BASE_URL = "http://localhost:8080";
 
 export default function PaymentGatewayPage() {
   const router = useRouter();
 
   // State dữ liệu
-  const [timeLeft, setTimeLeft] = useState(600); // 10 phút đếm ngược
+  const [timeLeft, setTimeLeft] = useState(600);
   const [status, setStatus] = useState<
     "loading" | "pending" | "processing" | "success"
   >("loading");
   const [totalAmount, setTotalAmount] = useState(0);
   const [user, setUser] = useState<any>(null);
-  const [orderInfo, setOrderInfo] = useState(""); // Nội dung chuyển khoản
+  const [orderInfo, setOrderInfo] = useState("");
 
-  // 1. Lấy thông tin User và Giỏ hàng khi vào trang
+  // 2. Thêm State quản lý Toast
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  // Hàm tiện ích để hiển thị Toast
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+  };
+
+  // Lấy thông tin User và Giỏ hàng
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (!userStr) {
@@ -37,9 +54,8 @@ export default function PaymentGatewayPage() {
     }
     const parsedUser = JSON.parse(userStr);
     setUser(parsedUser);
-    setOrderInfo(`SHAREACC ${parsedUser.user_id}`); // Nội dung CK: SHAREACC + ID User
+    setOrderInfo(`SHAREACC ${parsedUser.user_id}`);
 
-    // Gọi API lấy giỏ hàng để tính tổng tiền (Bảo mật: Tính lại từ Server chứ không lấy từ trang trước)
     const fetchCartTotal = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/cart/${parsedUser.user_id}`);
@@ -48,12 +64,12 @@ export default function PaymentGatewayPage() {
         const cartItems = await res.json();
 
         if (cartItems.length === 0) {
-          alert("Giỏ hàng trống hoặc đã thanh toán! Quay lại trang chủ.");
-          router.push("/");
+          // Thay alert bằng Toast + Delay chuyển trang
+          showToast("Giỏ hàng trống! Đang quay lại trang chủ...", "error");
+          setTimeout(() => router.push("/"), 2000);
           return;
         }
 
-        // Tính tổng tiền
         const total = cartItems.reduce(
           (sum: number, item: any) =>
             sum + Number(item.Products.price) * item.quantity,
@@ -61,18 +77,18 @@ export default function PaymentGatewayPage() {
         );
 
         setTotalAmount(total);
-        setStatus("pending"); // Đã lấy xong tiền -> Hiện mã QR
+        setStatus("pending");
       } catch (error) {
         console.error(error);
-        alert("Không thể kết nối Server (8080). Vui lòng thử lại.");
-        router.push("/cart");
+        showToast("Lỗi kết nối Server. Đang quay lại...", "error");
+        setTimeout(() => router.push("/cart"), 2000);
       }
     };
 
     fetchCartTotal();
   }, [router]);
 
-  // 2. Logic Đếm ngược hiển thị
+  // Đếm ngược
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -80,14 +96,12 @@ export default function PaymentGatewayPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 3. LOGIC QUAN TRỌNG: Giả lập Quét QR -> Gọi API Checkout thật
+  // LOGIC THANH TOÁN
   useEffect(() => {
     if (status !== "pending" || !user) return;
 
-    // Giả lập khách hàng đang mở app ngân hàng quét QR...
-    // Sau 10 giây -> Coi như đã nhận tiền -> Gọi API Backend
     const paymentTimer = setTimeout(async () => {
-      setStatus("processing"); // Chuyển sang trạng thái đang xử lý đơn (xoay xoay)
+      setStatus("processing");
 
       try {
         console.log("💳 Đang gọi API Checkout...");
@@ -103,15 +117,13 @@ export default function PaymentGatewayPage() {
         if (res.ok) {
           console.log("✅ Checkout thành công:", data);
           setStatus("success");
-
-          // Xóa giỏ hàng hiển thị trên Navbar (nếu có dùng event listener)
           window.dispatchEvent(new Event("cartUpdated"));
 
-          // Chờ 3 giây để người dùng đọc thông báo thành công rồi chuyển trang
+          // Thay alert thành công bằng Toast
+          showToast("Thanh toán thành công! Đang chuyển hướng...", "success");
+
+          // Chuyển trang sau 3 giây
           setTimeout(() => {
-            alert(
-              "Thanh toán thành công! Vui lòng kiểm tra Email để nhận tài khoản."
-            );
             router.push("/checkout/success");
           }, 3000);
         } else {
@@ -119,15 +131,16 @@ export default function PaymentGatewayPage() {
         }
       } catch (error: any) {
         console.error("Lỗi checkout:", error);
-        alert(`Lỗi: ${error.message}`);
-        setStatus("pending"); // Cho phép thử lại
+        // Thay alert lỗi bằng Toast
+        showToast(`Lỗi: ${error.message}`, "error");
+        setStatus("pending");
       }
-    }, 10000); // 10 giây giả lập khách thanh toán
+    }, 10000);
 
     return () => clearTimeout(paymentTimer);
   }, [status, user, router]);
 
-  // Format tiền & Thời gian
+  // Helpers
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -141,25 +154,31 @@ export default function PaymentGatewayPage() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Thông tin ngân hàng của bạn
   const bankInfo = {
     bankId: "MB",
     accountNo: "0333666999",
     accountName: "NGUYEN VAN A",
   };
 
-  // Link QR VietQR động
   const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNo}-compact2.jpg?amount=${totalAmount}&addInfo=${orderInfo}&accountName=${bankInfo.accountName}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 relative">
       <Navbar />
+
+      {/* 3. Hiển thị Toast nếu show = true */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* --- CỘT TRÁI: QR CODE --- */}
           <div className="bg-white p-6 rounded-[20px] shadow-sm border border-gray-100 flex flex-col items-center text-center min-h-[400px] justify-center relative overflow-hidden">
-            {/* Loading ban đầu */}
             {status === "loading" && (
               <div className="flex flex-col items-center gap-3">
                 <RefreshCcw className="animate-spin text-primary" size={32} />
@@ -167,7 +186,6 @@ export default function PaymentGatewayPage() {
               </div>
             )}
 
-            {/* Trạng thái Pending & Processing (Hiện QR) */}
             {(status === "pending" || status === "processing") && (
               <div className="w-full flex flex-col items-center animate-in fade-in duration-500">
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
@@ -178,13 +196,11 @@ export default function PaymentGatewayPage() {
                   <span>Đơn hàng hết hạn sau: {formatTime(timeLeft)}</span>
                 </div>
 
-                {/* Khung QR */}
                 <div
                   className={`p-4 border-2 border-primary/20 rounded-xl mb-6 bg-white relative transition-opacity duration-300 ${
                     status === "processing" ? "opacity-50" : "opacity-100"
                   }`}
                 >
-                  {/* Logo VNPAY giả lập cho uy tín */}
                   <div className="absolute -top-3 -right-3 bg-white p-1 rounded-full border border-gray-100 shadow-sm w-10 h-10 flex items-center justify-center z-10">
                     <img
                       src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png"
@@ -193,14 +209,12 @@ export default function PaymentGatewayPage() {
                     />
                   </div>
 
-                  {/* QR Code thật */}
                   <img
                     src={qrUrl}
                     alt="VietQR Code"
                     className="w-full max-w-[260px] h-auto object-contain rounded-lg"
                   />
 
-                  {/* Overlay xoay xoay khi đang xử lý */}
                   {status === "processing" && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm z-20">
                       <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -229,7 +243,6 @@ export default function PaymentGatewayPage() {
               </div>
             )}
 
-            {/* Trạng thái Success */}
             {status === "success" && (
               <div className="flex flex-col items-center animate-in zoom-in duration-300">
                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
@@ -274,9 +287,10 @@ export default function PaymentGatewayPage() {
                     <Copy
                       size={16}
                       className="text-gray-400 cursor-pointer hover:text-primary"
-                      onClick={() =>
-                        navigator.clipboard.writeText(bankInfo.accountNo)
-                      }
+                      onClick={() => {
+                        navigator.clipboard.writeText(bankInfo.accountNo);
+                        showToast("Đã sao chép số tài khoản!", "success");
+                      }}
                     />
                   </div>
                 </div>
@@ -306,7 +320,10 @@ export default function PaymentGatewayPage() {
                     <Copy
                       size={18}
                       className="text-yellow-600 cursor-pointer hover:text-yellow-800"
-                      onClick={() => navigator.clipboard.writeText(orderInfo)}
+                      onClick={() => {
+                        navigator.clipboard.writeText(orderInfo);
+                        showToast("Đã sao chép nội dung!", "success");
+                      }}
                     />
                   </div>
                 </div>

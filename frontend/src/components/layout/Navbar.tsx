@@ -193,11 +193,11 @@ export default function Navbar() {
                             <User size={18} /> Thông tin tài khoản
                           </Link>
                           <Link
-                            href="/orders"
+                            href="/dashboard"
                             onClick={() => setIsDropdownOpen(false)} // Đóng khi click link
                             className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
                           >
-                            <Package size={18} /> Đơn hàng của tôi
+                            <Package size={18} /> Quản lý dịch vụ
                           </Link>
                         </div>
                         <div className="border-t border-gray-100 py-1">

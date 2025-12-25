@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // Dùng để chuyển trang nếu chưa login
 import Navbar from "@/components/layout/Navbar";
 import {
   Phone,
@@ -10,14 +11,28 @@ import {
   Send,
   CheckCircle2,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 export default function SupportPage() {
-  // State quản lý hiển thị Modal xác nhận và Thông báo thành công
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const router = useRouter();
 
-  // State quản lý dữ liệu form (để sau này gửi API)
+  // State quản lý User (để lấy user_id)
+  const [user, setUser] = useState<any>(null);
+
+  // State quản lý hiển thị Modal & Toast
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  // State dữ liệu form
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,40 +40,92 @@ export default function SupportPage() {
     content: "",
   });
 
-  // Xử lý khi người dùng nhập liệu
+  // 1. Lấy thông tin User khi vào trang
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const parsedUser = JSON.parse(userStr);
+      setUser(parsedUser);
+      // Tự động điền tên và email nếu đã đăng nhập (Tiện ích UX)
+      setFormData((prev) => ({
+        ...prev,
+        name: parsedUser.name || "",
+        email: parsedUser.email || "",
+      }));
+    }
+  }, []);
+
+  // Hàm hiển thị thông báo
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Bước 1: Bấm nút Gửi -> Hiện Modal xác nhận
+  // Bước 1: Bấm nút Gửi -> Kiểm tra đăng nhập & Hiện Modal
   const handleInitialSubmit = (e: any) => {
     e.preventDefault();
-    // (Có thể thêm validate form ở đây nếu cần)
+
+    if (!user) {
+      // Nếu chưa đăng nhập thì không cho gửi (vì Backend cần user_id)
+      const confirmLogin = confirm(
+        "Bạn cần đăng nhập để gửi yêu cầu hỗ trợ. Đi đến trang đăng nhập?"
+      );
+      if (confirmLogin) router.push("/login");
+      return;
+    }
+
     setShowConfirmModal(true);
   };
 
-  // Bước 2: Bấm "Xác nhận" trong Modal -> Xử lý gửi và hiện Success
-  const handleConfirmSend = () => {
-    setShowConfirmModal(false); // Tắt modal
+  // Bước 2: Bấm "Xác nhận" -> GỌI API BACKEND THẬT
+  const handleConfirmSend = async () => {
+    setShowConfirmModal(false);
 
-    // Giả lập gửi API thành công...
-    setTimeout(() => {
-      setShowSuccessToast(true); // Hiện thông báo thành công
+    try {
+      const payload = {
+        user_id: user.user_id,
+        subject: formData.issue,
+        message: formData.content,
+      };
 
-      // Tự động tắt thông báo sau 3 giây và reset form
-      setTimeout(() => {
-        setShowSuccessToast(false);
-        setFormData({ name: "", email: "", issue: "", content: "" });
-      }, 3000);
-    }, 500);
+      const res = await fetch("http://localhost:8080/supports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gửi thất bại");
+      }
+
+      // Thành công
+      showToast(
+        "Gửi yêu cầu thành công! Chúng tôi sẽ phản hồi sớm.",
+        "success"
+      );
+
+      // Reset form (trừ tên và email)
+      setFormData((prev) => ({ ...prev, issue: "", content: "" }));
+    } catch (error: any) {
+      console.error(error);
+      showToast(error.message || "Lỗi kết nối server", "error");
+    }
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
 
-      {/* --- BANNER HEADER (Giống ảnh thiết kế) --- */}
+      {/* --- BANNER HEADER --- */}
       <div className="bg-gradient-to-r from-blue-500 to-cyan-400 py-12 mb-10 text-center text-white">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">
           Chúng tôi có thể giúp gì cho bạn?
@@ -70,12 +137,11 @@ export default function SupportPage() {
           {/* --- CỘT TRÁI: KÊNH HỖ TRỢ NHANH --- */}
           <div className="lg:w-1/3">
             <div className="bg-white p-6 rounded-[20px] shadow-sm border border-gray-100 sticky top-24">
+              {/* (Giữ nguyên phần thông tin liên hệ tĩnh) */}
               <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Kênh hỗ trợ nhanh
               </h2>
-
               <div className="space-y-6">
-                {/* Hotline */}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-primary shrink-0">
                     <Phone size={20} />
@@ -92,8 +158,6 @@ export default function SupportPage() {
                     </a>
                   </div>
                 </div>
-
-                {/* Email */}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-primary shrink-0">
                     <Mail size={20} />
@@ -108,8 +172,6 @@ export default function SupportPage() {
                     </a>
                   </div>
                 </div>
-
-                {/* Chat */}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-primary shrink-0">
                     <MessageCircle size={20} />
@@ -126,10 +188,7 @@ export default function SupportPage() {
                     </a>
                   </div>
                 </div>
-
                 <div className="border-t border-gray-100 my-4"></div>
-
-                {/* Thời gian làm việc */}
                 <div className="flex items-center gap-3 text-sm text-gray-500">
                   <Clock size={16} />
                   <span>
@@ -166,8 +225,14 @@ export default function SupportPage() {
                       value={formData.name}
                       onChange={handleChange}
                       type="text"
+                      // Nếu đã login thì disable để không sửa
+                      readOnly={!!user}
                       placeholder="Nhập họ tên của bạn"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      className={`w-full px-4 py-3 rounded-lg border border-gray-300 outline-none transition-all ${
+                        user
+                          ? "bg-gray-100 text-gray-500"
+                          : "focus:border-primary focus:ring-2 focus:ring-blue-100"
+                      }`}
                     />
                   </div>
 
@@ -182,13 +247,18 @@ export default function SupportPage() {
                       value={formData.email}
                       onChange={handleChange}
                       type="email"
+                      readOnly={!!user}
                       placeholder="Nhập email"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      className={`w-full px-4 py-3 rounded-lg border border-gray-300 outline-none transition-all ${
+                        user
+                          ? "bg-gray-100 text-gray-500"
+                          : "focus:border-primary focus:ring-2 focus:ring-blue-100"
+                      }`}
                     />
                   </div>
                 </div>
 
-                {/* Vấn đề cần hỗ trợ */}
+                {/* Vấn đề cần hỗ trợ (Gửi lên API trường 'subject') */}
                 <div className="space-y-2">
                   <label className="font-bold text-gray-900 text-sm">
                     Vấn đề cần hỗ trợ
@@ -198,15 +268,21 @@ export default function SupportPage() {
                       name="issue"
                       value={formData.issue}
                       onChange={handleChange}
+                      required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white"
                     >
                       <option value="">Chọn vấn đề...</option>
-                      <option value="tech">Lỗi kỹ thuật / Đăng nhập</option>
-                      <option value="billing">Thanh toán / Gia hạn</option>
-                      <option value="product">Tư vấn gói dịch vụ</option>
-                      <option value="other">Khác</option>
+                      <option value="Lỗi kỹ thuật / Đăng nhập">
+                        Lỗi kỹ thuật / Đăng nhập
+                      </option>
+                      <option value="Thanh toán / Gia hạn">
+                        Thanh toán / Gia hạn
+                      </option>
+                      <option value="Tư vấn gói dịch vụ">
+                        Tư vấn gói dịch vụ
+                      </option>
+                      <option value="Khác">Khác</option>
                     </select>
-                    {/* Mũi tên custom cho select đẹp hơn */}
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                       <svg
                         width="12"
@@ -227,7 +303,7 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                {/* Nội dung chi tiết */}
+                {/* Nội dung chi tiết (Gửi lên API trường 'message') */}
                 <div className="space-y-2">
                   <label className="font-bold text-gray-900 text-sm">
                     Nội dung chi tiết
@@ -257,7 +333,7 @@ export default function SupportPage() {
         </div>
       </div>
 
-      {/* --- MODAL XÁC NHẬN (Popup) --- */}
+      {/* --- MODAL XÁC NHẬN --- */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in duration-200">
@@ -283,20 +359,34 @@ export default function SupportPage() {
         </div>
       )}
 
-      {/* --- THÔNG BÁO THÀNH CÔNG (Toast) --- */}
-      {showSuccessToast && (
-        <div className="fixed bottom-10 right-10 z-[100] bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-right duration-300">
-          <div className="bg-green-100 p-2 rounded-full text-green-600">
-            <CheckCircle2 size={24} />
+      {/* --- THÔNG BÁO TOAST (Dynamic Success/Error) --- */}
+      {toast.show && (
+        <div
+          className={`fixed bottom-10 right-10 z-[100] bg-white border-l-4 shadow-2xl rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-right duration-300 ${
+            toast.type === "success" ? "border-green-500" : "border-red-500"
+          }`}
+        >
+          <div
+            className={`p-2 rounded-full ${
+              toast.type === "success"
+                ? "bg-green-100 text-green-600"
+                : "bg-red-100 text-red-600"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <CheckCircle2 size={24} />
+            ) : (
+              <AlertCircle size={24} />
+            )}
           </div>
           <div>
-            <h4 className="font-bold text-gray-900">Gửi thành công!</h4>
-            <p className="text-sm text-gray-500">
-              Chúng tôi sẽ liên hệ lại sớm nhất.
-            </p>
+            <h4 className="font-bold text-gray-900">
+              {toast.type === "success" ? "Thành công!" : "Lỗi!"}
+            </h4>
+            <p className="text-sm text-gray-500">{toast.message}</p>
           </div>
           <button
-            onClick={() => setShowSuccessToast(false)}
+            onClick={() => setToast((prev) => ({ ...prev, show: false }))}
             className="ml-4 text-gray-400 hover:text-gray-600"
           >
             <X size={18} />
