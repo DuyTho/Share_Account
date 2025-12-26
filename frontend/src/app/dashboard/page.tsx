@@ -131,6 +131,27 @@ export default function DashboardPage() {
     return diffDays > 0 ? diffDays : 0;
   };
 
+  const handleRenew = async (subId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscriptions/renew`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sub_id: subId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        router.push(data.redirect_url);
+      } else {
+        console.error("Lỗi gia hạn:", await response.text());
+      }
+    } catch (error) {
+      console.error("Lỗi khi gọi API gia hạn:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
@@ -225,6 +246,7 @@ export default function DashboardPage() {
                           </div>
 
                           <button
+                            onClick={() => handleRenew(sub.sub_id)}
                             className={`${
                               isExpired
                                 ? "border border-primary text-primary hover:bg-blue-50"
