@@ -1,18 +1,18 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 // Cấu hình transporter (người đưa thư)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: 'official.shareacc@gmail.com', // Điền email của bạn
-    pass: 'pmmf qnjg gpbb vent' // Điền App Password (không phải pass login)
-  }
+    user: "official.shareacc@gmail.com", // Điền email của bạn
+    pass: "pmmf qnjg gpbb vent", // Điền App Password (không phải pass login)
+  },
 });
 
 export const sendPaymentSuccessEmail = async (
-  toEmail: string, 
-  userName: string, 
-  productName: string, 
+  toEmail: string,
+  userName: string,
+  productName: string,
   orderId: number
 ) => {
   const mailOptions = {
@@ -45,7 +45,7 @@ export const sendPaymentSuccessEmail = async (
           <p>Email này được gửi tự động, vui lòng không trả lời nếu không cần hỗ trợ.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -54,5 +54,45 @@ export const sendPaymentSuccessEmail = async (
   } catch (error) {
     console.error("❌ Lỗi gửi mail:", error);
     // Không throw error để tránh làm crash luồng thanh toán chính
+  }
+};
+
+export const sendExpiryReminder = async (
+  toEmail: string,
+  userName: string,
+  daysLeft: number,
+  productName?: string
+) => {
+  const mailOptions = {
+    from: '"ShareAccount Support" <no-reply@shareaccount.vn>',
+    to: toEmail,
+    subject: `[ShareAccount] Lưu ý: gói dịch vụ ${
+      productName ?? ""
+    } sẽ hết hạn sau ${daysLeft} ngày`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #ffc107; padding: 20px; text-align: center; color: #212529;">
+          <h2 style="margin: 0;">Nhắc nhở: Gói dịch vụ sắp hết hạn</h2>
+        </div>
+        <div style="padding: 20px; color: #333;">
+          <p>Xin chào <strong>${userName}</strong>,</p>
+          <p>Gói dịch vụ <strong>${
+            productName ?? "của bạn"
+          }</strong> sẽ hết hạn sau <strong>${daysLeft} ngày</strong>.</p>
+          <p>Để tránh gián đoạn, bạn có thể gia hạn gói trước khi hết hạn.</p>
+          <p>Nếu bạn đã gia hạn hoặc có thắc mắc, vui lòng bỏ qua email này hoặc phản hồi để được hỗ trợ.</p>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+          <p>Cảm ơn bạn đã sử dụng ShareAccount.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Đã gửi email nhắc hạn cho: ${toEmail}`);
+  } catch (error) {
+    console.error("❌ Lỗi khi gửi email nhắc hạn:", error);
   }
 };

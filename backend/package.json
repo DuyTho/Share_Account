@@ -16,6 +16,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "nodemailer": "^7.0.11",
+    "node-cron": "^3.0.2",
     "puppeteer": "^24.34.0",
     "puppeteer-core": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
