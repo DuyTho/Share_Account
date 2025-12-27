@@ -20,6 +20,7 @@ const API_BASE_URL = "http://localhost:8080";
 // --- Types ---
 interface Subscription {
   sub_id: number;
+  product_id: number;
   start_date: string;
   end_date: string;
   status: string;
@@ -131,24 +132,33 @@ export default function DashboardPage() {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  const handleRenew = async (subId: number) => {
+  const handleRenew = async (sub: Subscription) => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/subscriptions/renew`, {
+      const response = await fetch(`${API_BASE_URL}/cart`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ sub_id: subId }),
+        body: JSON.stringify({
+          user_id: user.user_id,
+          product_id: sub.product_id,
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        router.push(data.redirect_url);
-      } else {
-        console.error("Lỗi gia hạn:", await response.text());
+      if (!response.ok) {
+        console.error(
+          "Lỗi thêm vào giỏ hàng để gia hạn:",
+          await response.text()
+        );
+        return;
       }
+      router.push("/checkout");
     } catch (error) {
-      console.error("Lỗi khi gọi API gia hạn:", error);
+      console.error("Lỗi khi xử lý gia hạn:", error);
     }
   };
 
@@ -246,7 +256,7 @@ export default function DashboardPage() {
                           </div>
 
                           <button
-                            onClick={() => handleRenew(sub.sub_id)}
+                            onClick={() => handleRenew(sub)}
                             className={`${
                               isExpired
                                 ? "border border-primary text-primary hover:bg-blue-50"

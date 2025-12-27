@@ -128,10 +128,10 @@ export default function Navbar() {
             <div className="flex items-center justify-between gap-4">
               <Link href="/" className="px-4 py-2">
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt="Logo"
-                  width={120}
-                  height={40}
+                  width={300}
+                  height={100}
                   className="object-contain"
                 />
               </Link>

@@ -118,7 +118,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
     }
 }
 
-// 5. API CHECKOUT: Xử lý thanh toán tự động (Giữ nguyên logic cũ của bạn)
+// 5. API CHECKOUT: Xử lý thanh toán tự động 
 export const checkout = async (req: Request, res: Response) => {
   const { user_id } = req.body;
 
@@ -202,7 +202,7 @@ export const checkout = async (req: Request, res: Response) => {
   }
 };
 
-// 6. Create Order thủ công (Nếu cần giữ lại)
+// 6. Create Order thủ công 
 export const createOrder = async (req: Request, res: Response) => {
   const { user_id, product_id, total, payment_method } = req.body
   try {

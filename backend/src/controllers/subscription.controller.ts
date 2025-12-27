@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../prisma";
-
+import {checkout} from "../controllers/order.controller"
 // Lấy danh sách gói đăng ký của 1 user
 export const getUserSubscriptions = async (req: Request, res: Response) => {
   const { user_id } = req.params;
@@ -24,28 +24,16 @@ export const renewSubscription = async (req: Request, res: Response) => {
     // Tìm subscription cũ
     const oldSubscription = await prisma.subscriptions.findUnique({
       where: { sub_id },
-      include: { Products: true, Users: true },
+      include: { Users: true },
     });
 
     if (!oldSubscription) {
       return res.status(404).json({ error: "Subscription không tồn tại." });
     }
 
-    // Tạo đơn hàng mới dựa trên subscription cũ
-    const newOrder = await prisma.orders.create({
-      data: {
-        user_id: oldSubscription.user_id,
-        product_id: oldSubscription.product_id,
-        total: oldSubscription.Products.price,
-        payment_status: "pending",
-      },
-    });
+    req.body.user_id = oldSubscription.user_id;
 
-    res.json({
-      message: "Đã tạo đơn hàng mới để gia hạn.",
-      order_id: newOrder.order_id,
-      redirect_url: `/payment/${newOrder.order_id}`,
-    });
+    return checkout(req, res);
   } catch (error) {
     console.error("Lỗi khi gia hạn subscription:", error);
     res.status(500).json({ error: "Lỗi khi gia hạn subscription." });
