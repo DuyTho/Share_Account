@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import prisma from "../prisma";
 import {checkout} from "../controllers/order.controller"
-// Lấy danh sách gói đăng ký của 1 user
+
+// 1. Lấy danh sách gói đăng ký của 1 user
 export const getUserSubscriptions = async (req: Request, res: Response) => {
   const { user_id } = req.params;
   try {
@@ -16,7 +17,7 @@ export const getUserSubscriptions = async (req: Request, res: Response) => {
   }
 };
 
-// Hàm gia hạn subscription
+// 2. Hàm gia hạn subscription
 export const renewSubscription = async (req: Request, res: Response) => {
   try {
     const { sub_id } = req.body;

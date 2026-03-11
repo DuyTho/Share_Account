@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import prisma from '../prisma'
 import { v4 as uuidv4 } from 'uuid';
 
-// Lấy danh sách user
+// 1. Lấy danh sách user
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.users.findMany({
@@ -22,7 +22,7 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 }
 
-// Tạo user mới
+// 2. Tạo user mới
 export const createUser = async (req: Request, res: Response) => {
   const { name, email, password, phone } = req.body
   try {
@@ -35,6 +35,7 @@ export const createUser = async (req: Request, res: Response) => {
   }
 }
 
+// 3. Cập nhật thông tin user
 export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { name, email, phone, status } = req.body;
@@ -49,6 +50,7 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 }
 
+// 4. Xóa user
 export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -61,6 +63,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 }
 
+// 5. Xử lý đăng nhập 
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -89,6 +92,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 }
 
+// 6. Lấy thông tin người dùng
 export const getUserProfile = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -106,6 +110,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
   }
 };
 
+// 7. Cập nhật thông tin trong profile
 export const updateUserProfile = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { name, phone } = req.body; // Chỉ cho phép sửa Tên và SĐT
@@ -136,6 +141,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
   }
 };
 
+// 8. Xử lý đăng nhập bằng Google
 export const googleLogin = async (req: Request, res: Response) => {
   const { email, name, avatar, google_id } = req.body;
 
@@ -168,7 +174,6 @@ export const googleLogin = async (req: Request, res: Response) => {
         phone: "", // Google không trả về sđt, để trống user tự cập nhật sau
         role: "customer",
         status: "active",
-        // Nếu DB bạn có trường avatar thì thêm: avatar: avatar
       }
     });
 

@@ -9,7 +9,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       _sum: { total: true },
       where: { payment_status: 'paid' }
     });
-    // Prisma trả về Decimal, cần ép kiểu về Number
     const totalRevenue = Number(revenueAgg._sum.total || 0);
 
 
@@ -41,7 +40,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }
     });
 
-    // Format lại data recentOrders cho gọn đẹp
     const formattedRecent = recentOrders.map(order => ({
       id: order.order_id,
       customer: order.Users.name,
@@ -53,9 +51,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     }));
 
 
-    // --- 6. (NÂNG CAO) DATA BIỂU ĐỒ DOANH THU 12 THÁNG ---
-    // Logic: Lấy tất cả đơn 'paid', sau đó group by tháng bằng Javascript
-    // (Lưu ý: Nếu dữ liệu lớn hàng triệu dòng thì cần dùng raw query SQL, nhưng với quy mô nhỏ thì cách này ổn)
+    // --- 6. DATA BIỂU ĐỒ DOANH THU 12 THÁNG ---
     const allPaidOrders = await prisma.orders.findMany({
       where: { payment_status: 'paid' },
       select: { date: true, total: true }
@@ -66,7 +62,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     allPaidOrders.forEach(order => {
       if (order.date) {
-        const month = new Date(order.date).getMonth(); // Tháng 0 - 11
+        const month = new Date(order.date).getMonth(); 
         monthlyRevenue[month] += Number(order.total);
       }
     });
@@ -85,7 +81,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         paid: paidOrders,
         cancelled: cancelledOrders
       },
-      chart_data: monthlyRevenue, // Mảng [Tháng 1, Tháng 2, ...]
+      chart_data: monthlyRevenue, 
       recent_orders: formattedRecent
     });
 

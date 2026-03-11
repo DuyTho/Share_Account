@@ -1,0 +1,44 @@
+
+services:
+  # 1. Database MySQL
+  mysql-db:
+    image: mysql:8.0
+    container_name: share_account_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: share_account
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # 2. Backend
+  backend:
+    build: 
+      context: ./backend
+    container_name: share_account_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=mysql://root:rootpassword@mysql-db:3306/share_account
+      - PORT=8080
+      - MAIL_USER=official.shareacc@gmail.com
+      - MAIL_PASS=pmmf qnjg gpbb vent
+    depends_on:
+      - mysql-db
+
+  # 3. Frontend
+  frontend:
+    build: 
+      context: ./frontend
+    container_name: share_account_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

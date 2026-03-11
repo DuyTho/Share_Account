@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import prisma from '../prisma'
 
+// 1. Lấy danh sách các phiếu hỗ trợ
 export const getSupport = async (req: Request, res: Response) => {
   try {
     const supports = await prisma.support.findMany({
@@ -22,6 +23,7 @@ export const getSupport = async (req: Request, res: Response) => {
   }
 }
 
+// 2. Lấy phiếu hỗ trợ cụ thể
 export const getSupportById = async (req: Request, res: Response) => {
   const { id } = req.params
 
@@ -45,6 +47,7 @@ export const getSupportById = async (req: Request, res: Response) => {
   }
 }
 
+// 3. Tạo phiếu hỗ trợ
 export const createSupport = async (req: Request, res: Response) => {
   const { user_id, subject, message } = req.body
 
@@ -68,6 +71,7 @@ export const createSupport = async (req: Request, res: Response) => {
   }
 }
 
+// 4. Cập nhật phiếu hỗ trợ
 export const updateSupport = async (req: Request, res: Response) => {
   const { id } = req.params
   const { status, message } = req.body 

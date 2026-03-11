@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import prisma from '../prisma'
 
+// 1. Lấy danh sách sản phẩm
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const products = await prisma.products.findMany()
@@ -10,6 +11,7 @@ export const getProducts = async (req: Request, res: Response) => {
   }
 }
 
+// 2. Tạo mới gói dịch vụ qua Admin
 export const createProduct = async (req: Request, res: Response) => {
   const { name, duration_months, price, description } = req.body
   try {
@@ -28,6 +30,7 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 }
 
+// 3. Cập nhật gói dịch vụ
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params; // Lấy ID từ đường dẫn (URL)
   const { description, price, name } = req.body; // Lấy dữ liệu cần sửa
@@ -51,6 +54,7 @@ export const updateProduct = async (req: Request, res: Response) => {
   }
 }
 
+// 4. Xóa gói dịch vụ
 export const deleteProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
