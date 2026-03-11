@@ -21,10 +21,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=mysql://root:rootpassword@mysql-db:3306/share_account
+      - DATABASE_URL=${DATABASE_URL}
       - PORT=8080
-      - MAIL_USER=official.shareacc@gmail.com
-      - MAIL_PASS=pmmf qnjg gpbb vent
+      - MAIL_USER=${MAIL_USER}     
+      - MAIL_PASS=${MAIL_PASS}
     depends_on:
       - mysql-db
 
@@ -36,7 +36,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     depends_on:
       - backend
 
