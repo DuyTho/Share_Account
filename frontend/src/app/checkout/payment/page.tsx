@@ -15,7 +15,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 export default function PaymentGatewayPage() {
   const router = useRouter();

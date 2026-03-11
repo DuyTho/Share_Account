@@ -15,7 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 export default function ProfilePage() {
   const router = useRouter();

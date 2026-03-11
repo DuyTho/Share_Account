@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 // Cấu hình URL Backend
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 // Interface cho Item trong giỏ
 interface CartItem {

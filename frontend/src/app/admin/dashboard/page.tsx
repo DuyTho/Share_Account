@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 // --- Types cập nhật theo đúng cấu trúc JSON từ DashboardController ---
 interface DashboardData {

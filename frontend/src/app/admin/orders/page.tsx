@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 // Cấu hình URL
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 // Interface map đúng với dữ liệu trả về từ Backend
 interface Order {

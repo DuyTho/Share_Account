@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // Cấu hình URL
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 // Interface khớp với dữ liệu từ Backend trả về
 interface CartItem {

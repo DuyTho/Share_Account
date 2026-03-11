@@ -19,7 +19,7 @@ import {
 import Chatbot from "@/components/common/chatbot";
 
 // Cấu hình URL API
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "@/config";;
 
 interface Product {
   product_id: number;
