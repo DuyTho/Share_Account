@@ -15,6 +15,7 @@ services:
 
   # 2. Backend
   backend:
+    image: duytho/share-account-backend:latest
     build: 
       context: ./backend
     container_name: share_account_backend
@@ -30,6 +31,7 @@ services:
 
   # 3. Frontend
   frontend:
+    image: duytho/share-account-frontend:latest
     build: 
       context: ./frontend
     container_name: share_account_frontend

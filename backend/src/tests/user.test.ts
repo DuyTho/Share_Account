@@ -9,7 +9,7 @@ app.use('/users', userRoutes);
 
 describe('User Controller - Unit Test', () => {
   
-  it('nên tạo người dùng mới thành công', async () => {
+  it('Tạo người dùng mới thành công', async () => {
     // 1. Giả lập dữ liệu mà Prisma sẽ trả về (không lưu vào DB thật)
     const mockUser = {
       user_id: 1,
@@ -49,7 +49,7 @@ describe('User Controller - Unit Test', () => {
     });
   });
 
-  it('nên trả về lỗi 500 nếu database gặp sự cố', async () => {
+  it('Trả về lỗi 500 nếu database gặp sự cố', async () => {
     // Giả lập tình huống Database bị sập
     prismaMock.users.create.mockRejectedValue(new Error('DB Connection Error'));
 

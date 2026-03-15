@@ -1,0 +1,68 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ] # Chạy tự động mỗi khi push code lên nhánh main
+
+jobs:
+  # Build Image và đẩy lên Docker Hub
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/share-account-backend:latest
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/share-account-frontend:latest
+
+  # Triển khai lên EC2
+  deploy:
+    needs: build-and-push 
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/Share_Account
+            
+            # 1. Cập nhật mã nguồn (để lấy docker-compose.yml mới nhất)
+            git pull origin main
+            
+            # 2. Tạo lại file .env từ Secret để bảo mật
+            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            
+            # 3. Đăng nhập Docker Hub trên EC2
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            
+            # 4. Pull image mới nhất về
+            docker compose pull
+            
+            # 5. Khởi động lại các dịch vụ
+            docker compose up -d
+            
+            # 6. Dọn dẹp rác (Image cũ) để không đầy ổ cứng 20GB
+            docker image prune -f
+            
+            # 7. Đồng bộ Database (Prisma)
+            docker exec share_account_backend npx prisma db push
