@@ -6,8 +6,6 @@
 
 A production-ready Fullstack application for account sharing in the e-commerce sector. This project demonstrates a complete lifecycle: from development with Next.js and Prisma to containerization with Docker and automated deployment on AWS EC2 via GitHub Actions.
 
-Access the application at `http://localhost:3000` and the API at `http://localhost:8080`.
-
 ## Table of Contents
 - [Features](#features)
 - [Tech Stack](#tech-stack)
