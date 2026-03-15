@@ -46,23 +46,25 @@ jobs:
           script: |
             cd ~/Share_Account
             
-            # 1. Cập nhật mã nguồn (để lấy docker-compose.yml mới nhất)
-            git pull origin main
+            # 1. Cập nhật mã nguồn
+            git fetch origin main
+            git reset --hard origin/main
             
-            # 2. Tạo lại file .env từ Secret để bảo mật
+            # 2. Tạo lại file .env 
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
             
             # 3. Đăng nhập Docker Hub trên EC2
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
             # 4. Pull image mới nhất về
-            docker compose pull
+            docker-compose pull
             
             # 5. Khởi động lại các dịch vụ
-            docker compose up -d
+            docker-compose up -d
             
             # 6. Dọn dẹp rác (Image cũ) để không đầy ổ cứng 20GB
             docker image prune -f
             
             # 7. Đồng bộ Database (Prisma)
+            sleep 5
             docker exec share_account_backend npx prisma db push
