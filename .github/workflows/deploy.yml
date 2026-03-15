@@ -60,6 +60,7 @@ jobs:
             docker-compose pull
             
             # 5. Khởi động lại các dịch vụ
+            docker-compose down --remove-orphans 
             docker-compose up -d
             
             # 6. Dọn dẹp rác (Image cũ) để không đầy ổ cứng 20GB
