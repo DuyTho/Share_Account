@@ -67,5 +67,5 @@ jobs:
             docker image prune -f
             
             # 7. Đồng bộ Database (Prisma)
-            sleep 5
+            sleep 60
             docker exec share_account_backend npx prisma db push
