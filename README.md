@@ -180,7 +180,7 @@ This project uses Prisma as the ORM.
 
 ## Author
 
-[Duy Tho](#github.com/DuyTho)
+[![GitHub](https://img.shields.io/badge/GitHub-PhanDuyTho-black?logo=github)](https://github.com/DuyTho)
 
 ## License
 
