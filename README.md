@@ -45,10 +45,10 @@ To run the entire project on your local machine in less than 2 minutes:
 
 ```bash
 # 1. Clone the repository
-git clone [https://github.com/DuyTho/Share_Account.git](https://github.com/DuyTho/Share_Account.git)
+git clone https://github.com/DuyTho/Share_Account.git
 cd Share_Account
 
-# 2. Setup Environment (Required for DB connection)
+# 2. Setup Environment 
 cp .env.example .env
 
 # 3. Launch with Docker
