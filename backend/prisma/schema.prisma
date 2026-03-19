@@ -16,6 +16,8 @@ model MasterAccounts {
   used_slots    Int?                   @default(0)
   status        MasterAccounts_status? @default(active)
   Subscriptions Subscriptions[]
+
+  @@map("masteraccounts")
 }
 
 model Orders {
@@ -32,6 +34,8 @@ model Orders {
 
   @@index([product_id], map: "product_id")
   @@index([user_id], map: "user_id")
+
+  @@map("orders")
 }
 
 model Products {
@@ -44,6 +48,8 @@ model Products {
   Orders          Orders[]
   Subscriptions   Subscriptions[]
   CartItems CartItems[]
+
+  @@map("products")
 }
 
 model Subscriptions {
@@ -64,6 +70,8 @@ model Subscriptions {
   @@index([order_id], map: "order_id")
   @@index([product_id], map: "product_id")
   @@index([user_id], map: "user_id")
+
+  @@map("subscriptions")
 }
 
 model Support {
@@ -76,6 +84,8 @@ model Support {
   Users      Users           @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "support_ibfk_1")
 
   @@index([user_id], map: "user_id")
+
+  @@map("support")
 }
 
 model Users {
@@ -91,6 +101,8 @@ model Users {
   Subscriptions Subscriptions[]
   Support       Support[]
   CartItems CartItems[]
+
+  @@map("users")
 }
 
 model CartItems {
@@ -106,6 +118,8 @@ model CartItems {
 
   @@index([user_id], map: "user_id")
   @@index([product_id], map: "product_id")
+
+  @@map("cartitems")
 }
 
 enum Users_role {
